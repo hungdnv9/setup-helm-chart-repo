@@ -1,0 +1,47 @@
+name: Release Charts
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  HELM_RELEASE: v3.0.2
+  HELM_S3_PLUGIN_RELEASE: 0.10.0
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: dorny/paths-filter@v2
+      id: filter
+      with:
+        filters: |
+          api:
+            - 'charts/api/**'
+          web:
+            - 'charts/web/**'
+
+    # run if 'api' or 'web' chart files were changed
+    - name: Install helm3 & helm s3 plugin
+      if: steps.filter.outputs.api == 'true' || steps.filter.outputs.web == 'true'
+      run: |
+        cd /tmp
+        wget https://get.helm.sh/helm-${{ env.HELM_RELEASE }}-linux-amd64.tar.gz
+        tar zxvf helm-${{ env.HELM_RELEASE }}-linux-amd64.tar.gz
+        chmod +x linux-amd64/helm
+        sudo mv linux-amd64/helm /usr/bin/helm
+        helm version
+        helm plugin install https://github.com/hypnoglow/helm-s3.git --version ${{ env.HELM_S3_PLUGIN_RELEASE }}
+
+    # run only if 'web' chart files were changed
+    - name: release api chart
+      if: steps.filter.outputs.api == 'true'
+      run: |
+
+
+    # run only if 'web' chart files were changed
+    - name: release web chart
+      if: steps.filter.outputs.web == 'true'
+      run: |
