@@ -19,9 +19,9 @@ jobs:
       with:
         filters: |
           api:
-            - 'charts/api/**'
+            - 'charts/api-quickstart/**'
           web:
-            - 'charts/web/**'
+            - 'charts/web-quickstart/**'
 
     # run if 'api' or 'web' chart files were changed
     - name: Install helm3 & helm s3 plugin
