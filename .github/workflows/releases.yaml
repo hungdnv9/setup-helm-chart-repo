@@ -44,6 +44,7 @@ jobs:
         sudo mv linux-amd64/helm /usr/bin/helm
         helm version
         helm plugin install https://github.com/hypnoglow/helm-s3.git --version ${{ env.HELM_S3_PLUGIN_RELEASE }}
+        helm repo add helm-s3-repo-quickstart s3://helm-repository-316516050658/charts
 
     # run only if 'api' chart files were changed
     - name: release api chart
@@ -51,7 +52,6 @@ jobs:
       run: |
         mkdir -p /tmp/api-release-candidate
         helm package charts/api-quickstart -d /tmp/api-release-candidate
-        helm repo add helm-s3-repo-quickstart s3://helm-repository-316516050658/charts
         helm s3 push --force $(ls -d /tmp/api-release-candidate/*.tgz) helm-s3-repo-quickstart
 
     # run only if 'web' chart files were changed
@@ -60,5 +60,4 @@ jobs:
       run: |
         mkdir -p /tmp/web-release-candidate
         helm package charts/web-quickstart -d /tmp/web-release-candidate/
-        helm repo add helm-s3-repo-quickstart s3://helm-repository-316516050658/charts
         helm s3 push --force $(ls -d /tmp/web-release-candidate/*.tgz) helm-s3-repo-quickstart
