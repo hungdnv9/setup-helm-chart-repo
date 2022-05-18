@@ -13,8 +13,18 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: dorny/paths-filter@v2
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    - name: Check files changed
+      uses: dorny/paths-filter@v2
       id: filter
       with:
         filters: |
@@ -23,25 +33,36 @@ jobs:
           web:
             - 'charts/web-quickstart/**'
 
-    # run if 'api' or 'web' chart files were changed
-    - name: Install helm3 & helm s3 plugin
-      if: steps.filter.outputs.api == 'true' || steps.filter.outputs.web == 'true'
-      run: |
-        cd /tmp
-        wget https://get.helm.sh/helm-${{ env.HELM_RELEASE }}-linux-amd64.tar.gz
-        tar zxvf helm-${{ env.HELM_RELEASE }}-linux-amd64.tar.gz
-        chmod +x linux-amd64/helm
-        sudo mv linux-amd64/helm /usr/bin/helm
-        helm version
-        helm plugin install https://github.com/hypnoglow/helm-s3.git --version ${{ env.HELM_S3_PLUGIN_RELEASE }}
-
-    # run only if 'web' chart files were changed
-    - name: release api chart
+    - name: Release api chart
       if: steps.filter.outputs.api == 'true'
-      run: |
+      uses: shellbear/helm-release-action@0.1
+      with:
+        repo: s3://helm-repository-316516050658/charts/
+        chart: ./charts/api-quickstart
+        forceRelease: true
 
+    # run if 'api' or 'web' chart files were changed
+    # - name: Install helm3 & helm s3 plugin
+    #   if: steps.filter.outputs.api == 'true' || steps.filter.outputs.web == 'true'
+    #   run: |
+    #     cd /tmp
+    #     wget https://get.helm.sh/helm-${{ env.HELM_RELEASE }}-linux-amd64.tar.gz
+    #     tar zxvf helm-${{ env.HELM_RELEASE }}-linux-amd64.tar.gz
+    #     chmod +x linux-amd64/helm
+    #     sudo mv linux-amd64/helm /usr/bin/helm
+    #     helm version
+    #     helm plugin install https://github.com/hypnoglow/helm-s3.git --version ${{ env.HELM_S3_PLUGIN_RELEASE }}
 
-    # run only if 'web' chart files were changed
-    - name: release web chart
-      if: steps.filter.outputs.web == 'true'
-      run: |
+    # # run only if 'web' chart files were changed
+    # - name: release api chart
+    #   if: steps.filter.outputs.api == 'true'
+    #   run: |
+    #     mkdir /tmp/release-candidate
+    #     helm package charts/api-quickstart -d /tmp/release-candidate/
+    #     helm repo add helm-s3-repo-quickstart s3://helm-repository-316516050658/charts
+    #     helm s3 push --force $(ls -d /tmp/release-candidate/*.tgz) helm-s3-repo-quickstart
+
+    # # run only if 'web' chart files were changed
+    # - name: release web chart
+    #   if: steps.filter.outputs.web == 'true'
+    #   run: |
